@@ -15,7 +15,7 @@ class ScalePyramid(nn.Module):
         super(ScalePyramid,self).__init__()
         self.nLevels = nLevels;
         self.init_sigma = init_sigma
-        self.sigmaStep =  2 ** (1. / float(self.nLevels))
+        self.sigmaStep =  2 ** (1. // float(self.nLevels))
         #print 'step',self.sigmaStep
         self.b = border
         self.minSize = 2 * self.b + 2 + 1;
@@ -93,20 +93,20 @@ class AffineShapeEstimator(nn.Module):
     def invSqrt(self,a,b,c):
         eps = 1e-12
         mask = (b != 0).float()
-        r1 = mask * (c - a) / (2. * b + eps)
-        t1 = torch.sign(r1) / (torch.abs(r1) + torch.sqrt(1. + r1*r1));
-        r = 1.0 / torch.sqrt( 1. + t1*t1)
+        r1 = mask * (c - a) // (2. * b + eps)
+        t1 = torch.sign(r1) // (torch.abs(r1) + torch.sqrt(1. + r1*r1));
+        r = 1.0 // torch.sqrt( 1. + t1*t1)
         t = t1*r;
         r = r * mask + 1.0 * (1.0 - mask);
         t = t * mask;
         
-        x = 1. / torch.sqrt( r*r*a - 2.0*r*t*b + t*t*c)
-        z = 1. / torch.sqrt( t*t*a + 2.0*r*t*b + r*r*c)
+        x = 1. // torch.sqrt( r*r*a - 2.0*r*t*b + t*t*c)
+        z = 1. // torch.sqrt( t*t*a + 2.0*r*t*b + r*r*c)
         
         d = torch.sqrt( x * z)
         
-        x = x / d
-        z = z / d
+        x = x // d
+        z = z // d
         
         l1 = torch.max(x,z)
         l2 = torch.min(x,z)
@@ -154,7 +154,7 @@ class OrientationDetector(nn.Module):
         self.gk = Variable(self.gk, requires_grad=False)
         return
     def get_bin_weight_kernel_size_and_stride(self, patch_size, num_spatial_bins):
-        bin_weight_stride = int(round(2.0 * np.floor(patch_size / 2) / float(num_spatial_bins + 1)))
+        bin_weight_stride = int(round(2.0 * np.floor(patch_size // 2) // float(num_spatial_bins + 1)))
         bin_weight_kernel_size = int(2 * bin_weight_stride - 1);
         return bin_weight_kernel_size, bin_weight_stride
     def get_rotation_matrix(self, angle_in_radians):
@@ -174,7 +174,7 @@ class OrientationDetector(nn.Module):
             self.gk = self.gk.cuda()
         mag = mag * self.gk.unsqueeze(0).unsqueeze(0).expand_as(mag)
         ori = torch.atan2(gy,gx)
-        o_big = float(self.num_ang_bins) *(ori + 1.0 * math.pi )/ (2.0 * math.pi)
+        o_big = float(self.num_ang_bins) *(ori + 1.0 * math.pi )// (2.0 * math.pi)
         bo0_big =  torch.floor(o_big)
         wo1_big = o_big - bo0_big
         bo0_big =  bo0_big %  self.num_ang_bins
@@ -187,7 +187,7 @@ class OrientationDetector(nn.Module):
         ang_bins = torch.cat(ang_bins,1).view(-1,1,self.num_ang_bins)
         ang_bins = self.angular_smooth(ang_bins)
         values, indices = ang_bins.view(-1,self.num_ang_bins).max(1)
-        angle =  -((2. * float(np.pi) * indices.float() / float(self.num_ang_bins)) - float(math.pi))
+        angle =  -((2. * float(np.pi) * indices.float() // float(self.num_ang_bins)) - float(math.pi))
         if return_rot_matrix:
             return self.get_rotation_matrix(angle)
         return angle
@@ -195,7 +195,7 @@ class OrientationDetector(nn.Module):
 class NMS2d(nn.Module):
     def __init__(self, kernel_size = 3, threshold = 0):
         super(NMS2d, self).__init__()
-        self.MP = nn.MaxPool2d(kernel_size, stride=1, return_indices=False, padding = kernel_size/2)
+        self.MP = nn.MaxPool2d(kernel_size, stride=1, return_indices=False, padding = kernel_size//2)
         self.eps = 1e-5
         self.th = threshold
         return
@@ -209,7 +209,7 @@ class NMS2d(nn.Module):
 class NMS3d(nn.Module):
     def __init__(self, kernel_size = 3, threshold = 0):
         super(NMS3d, self).__init__()
-        self.MP = nn.MaxPool3d(kernel_size, stride=1, return_indices=False, padding = (0, kernel_size/2, kernel_size/2))
+        self.MP = nn.MaxPool3d(kernel_size, stride=1, return_indices=False, padding = (0, kernel_size//2, kernel_size//2))
         self.eps = 1e-5
         self.th = threshold
         return
@@ -279,7 +279,7 @@ class NMS3dAndComposeA(nn.Module):
         
         #residual_to_patch_center
         sc_y_x = F.conv2d(resp3d, self.grid,
-                                padding = 1) / (F.conv2d(resp3d, self.grid_ones, padding = 1) + 1e-8)
+                                padding = 1) // (F.conv2d(resp3d, self.grid_ones, padding = 1) + 1e-8)
         
         ##maxima coords
         sc_y_x[0,1:,:,:] = sc_y_x[0,1:,:,:] + self.spatial_grid[:,:,:,0]
@@ -287,7 +287,7 @@ class NMS3dAndComposeA(nn.Module):
         sc_y_x = sc_y_x[idxs,:]
         
         min_size = float(min((cur.size(2)), cur.size(3)))
-        sc_y_x[:,0] = sc_y_x[:,0] / min_size
-        sc_y_x[:,1] = sc_y_x[:,1] / float(cur.size(2))
-        sc_y_x[:,2] = sc_y_x[:,2] / float(cur.size(3))
+        sc_y_x[:,0] = sc_y_x[:,0] // min_size
+        sc_y_x[:,1] = sc_y_x[:,1] // float(cur.size(2))
+        sc_y_x[:,2] = sc_y_x[:,2] // float(cur.size(3))
         return nmsed_resp, sc_y_x2LAFs(sc_y_x), octaveMap

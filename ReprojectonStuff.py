@@ -28,18 +28,18 @@ def linH(H, x, y):
         A = A.cuda()
     A = Variable(A)
     den = x * H[2,0] + y * H[2,1] + H[2,2]
-    num1_densq = (x*H[0,0] + y*H[0,1] + H[0,2]) / (den*den)
-    num2_densq = (x*H[1,0] + y*H[1,1] + H[1,2]) / (den*den)
-    A[:,0,0] = H[0,0]/den - num1_densq * H[2,0]
-    A[:,0,1] = H[0,1]/den - num1_densq * H[2,1]
-    A[:,1,0] = H[1,0]/den - num2_densq * H[2,0]
-    A[:,1,1] = H[1,1]/den - num2_densq * H[2,1]
+    num1_densq = (x*H[0,0] + y*H[0,1] + H[0,2]) // (den*den)
+    num2_densq = (x*H[1,0] + y*H[1,1] + H[1,2]) // (den*den)
+    A[:,0,0] = H[0,0]//den - num1_densq * H[2,0]
+    A[:,0,1] = H[0,1]//den - num1_densq * H[2,1]
+    A[:,1,0] = H[1,0]//den - num2_densq * H[2,0]
+    A[:,1,1] = H[1,1]//den - num2_densq * H[2,1]
     return A
 
 def reprojectLAFs(LAFs1, H1to2, return_LHFs = False):
     LHF1 = LAFs_to_H_frames(LAFs1)
     xy1 = torch.bmm(H1to2.expand(LHF1.size(0),3,3), LHF1[:,:,2:])
-    xy1 = xy1 / xy1[:,2:,:].expand(xy1.size(0), 3, 1)
+    xy1 = xy1 // xy1[:,2:,:].expand(xy1.size(0), 3, 1)
     As  = linH(H1to2, LAFs1[:,0,2], LAFs1[:,1,2])
     AF = torch.bmm(As, LHF1[:,0:2,0:2])
     if return_LHFs:
@@ -65,7 +65,7 @@ def reproject_to_canonical_Frob_batched(LHF1_inv, LHF2, batch_size = 2, skip_cen
     out =  torch.autograd.Variable(out)
     len1 = LHF1_inv.size(0)
     len2 = LHF2.size(0)
-    n_batches = int(np.floor(len1 / batch_size) + 1);
+    n_batches = int(np.floor(len1 // batch_size) + 1);
     for b_idx in range(n_batches):
         #print b_idx
         start = b_idx * batch_size;
@@ -116,7 +116,7 @@ def get_GT_correspondence_indexes_Fro_and_center(LAFs1,LAFs2, H1to2, dist_thresh
         if LHF2_in_1_pre.is_cuda:
             LHF2_in_1 = LHF2_in_1.cuda()
         LHF2_in_1 = Variable(LHF2_in_1)
-        LHF2_in_1[:, :2,:2] = rectifyAffineTransformationUpIsUp(LHF2_in_1_pre[:, :2,:2]/sc) * sc
+        LHF2_in_1[:, :2,:2] = rectifyAffineTransformationUpIsUp(LHF2_in_1_pre[:, :2,:2]//sc) * sc
         LHF2_in_1[:,:, 2] = LHF2_in_1_pre[:,:,2]
     else:
         LHF2_in_1 = LHF2_in_1_pre

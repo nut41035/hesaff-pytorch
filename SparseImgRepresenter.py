@@ -135,20 +135,20 @@ class ScaleSpaceAffinePatchExtractor(nn.Module):
                 patches_small =  extract_patches_from_pyramid_with_inv_index(self.scale_pyr, pyr_inv_idxs, new_LAFs, PS = self.AffNet.PS)
                 pe_time+=time.time() - t
                 l1,l2 = batch_eig2x2(A)      
-                ratio1 =  torch.abs(l1 / (l2 + 1e-8))
+                ratio1 =  torch.abs(l1 // (l2 + 1e-8))
                 converged_mask = (ratio1 <= 1.2) * (ratio1 >= (0.8)) 
         l1,l2 = batch_eig2x2(base_A)
         #print l1,l2
-        ratio = torch.abs(l1 / (l2 + 1e-8))
+        ratio = torch.abs(l1 // (l2 + 1e-8))
         #print new_LAFs[0:2,:,:]
         #print '***'
-        #print ((ratio < 6.0) * (ratio > (1./6.))).float().sum()
+        #print ((ratio < 6.0) * (ratio > (1.//6.))).float().sum()
         #print converged_mask.float().sum()
         #print is_good.float().sum()
 
-        #ratio = 1.0 + 0 * torch.abs(l1 / (l2 + 1e-8)) #CHANGE after training
-        idxs_mask = (ratio < 6.0) * (ratio > (1./6.)) * (is_good > 0.5)#  * converged_mask
-        #idxs_mask = ((ratio < 6.0) * (ratio > (1./6.)))# * converged_mask.float()) > 0
+        #ratio = 1.0 + 0 * torch.abs(l1 // (l2 + 1e-8)) #CHANGE after training
+        idxs_mask = (ratio < 6.0) * (ratio > (1.//6.)) * (is_good > 0.5)#  * converged_mask
+        #idxs_mask = ((ratio < 6.0) * (ratio > (1.//6.)))# * converged_mask.float()) > 0
         num_survived = idxs_mask.float().sum()
         #print num_survived
         if (num_features > 0) and (num_survived.data[0] > num_features):
@@ -165,8 +165,8 @@ class ScaleSpaceAffinePatchExtractor(nn.Module):
                                LAFs[:,:,2:]], dim =2)
         #new_LAFs = torch.cat([torch.bmm(base_A, LAFs[:,:,0:2]),
         #                       LAFs[:,:,2:]], dim =2)
-        print 'affnet_time',affnet_time
-        print 'pe_time', pe_time
+        print (('affnet_time',affnet_time))
+        print (('pe_time', pe_time))
         return final_resp, new_LAFs, final_pyr_idxs, final_level_idxs  
     
     def getOrientation(self, LAFs, final_pyr_idxs, final_level_idxs):
@@ -196,12 +196,12 @@ class ScaleSpaceAffinePatchExtractor(nn.Module):
         if self.num_Baum_iters > 0:
             num_features_prefilter = int(1.5 * self.num);
         responses, LAFs, final_pyr_idxs, final_level_idxs = self.multiScaleDetector(x,num_features_prefilter)
-        print time.time() - t, 'detection multiscale'
+        print ((time.time() - t, 'detection multiscale'))
         t = time.time()
         LAFs[:,0:2,0:2] =   self.mrSize * LAFs[:,:,0:2]
         if self.num_Baum_iters > 0:
             responses, LAFs, final_pyr_idxs, final_level_idxs  = self.getAffineShape(responses, LAFs, final_pyr_idxs, final_level_idxs, self.num)
-        print time.time() - t, 'affine shape iters'
+        print ((time.time() - t, 'affine shape iters'))
         t = time.time()
         #LAFs = self.getOrientation(scale_pyr, LAFs, final_pyr_idxs, final_level_idxs)
         #pyr_inv_idxs = get_inverted_pyr_index(scale_pyr, final_pyr_idxs, final_level_idxs)

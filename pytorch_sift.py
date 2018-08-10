@@ -12,7 +12,7 @@ class L2Norm(nn.Module):
         self.eps = 1e-10
     def forward(self, x):
         norm = torch.sqrt(torch.sum(x * x, dim = 1) + self.eps)
-        x= x / norm.unsqueeze(-1).expand_as(x)
+        x= x // norm.unsqueeze(-1).expand_as(x)
         return x
 
 class L1Norm(nn.Module):
@@ -21,7 +21,7 @@ class L1Norm(nn.Module):
         self.eps = 1e-10
     def forward(self, x):
         norm = torch.sum(torch.abs(x), dim = 1) + self.eps
-        x= x / norm.expand_as(x)
+        x= x // norm.expand_as(x)
         return x
 
 class my_atan2(torch.autograd.Function):
@@ -31,22 +31,22 @@ class my_atan2(torch.autograd.Function):
     def backward(self, grad_output):
         y,x = self.saved_tensors
         xsq_ysq = x*x + y*y
-        return grad_output * x/xsq_ysq, grad_output *-(y/xsq_ysq)
+        return grad_output * x//xsq_ysq, grad_output *-(y//xsq_ysq)
 
 def getPoolingKernel(kernel_size = 25):
-    step = 1. / float(np.floor( kernel_size / 2.));
-    x_coef = np.arange(step/2., 1. ,step)
+    step = 1. // float(np.floor( kernel_size // 2.));
+    x_coef = np.arange(step//2., 1. ,step)
     xc2 = np.hstack([x_coef,[1], x_coef[::-1]])
     kernel = np.outer(xc2.T,xc2)
     kernel = np.maximum(0,kernel)
     return kernel
 def get_bin_weight_kernel_size_and_stride(patch_size, num_spatial_bins):
-    bin_weight_stride = int(round(2.0 * math.floor(patch_size / 2) / float(num_spatial_bins + 1)))
+    bin_weight_stride = int(round(2.0 * math.floor(patch_size // 2) // float(num_spatial_bins + 1)))
     bin_weight_kernel_size = int(2 * bin_weight_stride - 1);
     return bin_weight_kernel_size, bin_weight_stride
 class SIFTNet(nn.Module):
     def CircularGaussKernel(self,kernlen=21):
-        halfSize = kernlen / 2;
+        halfSize = kernlen // 2;
         r2 = float(halfSize*halfSize);
         sigma2 = 0.9 * r2;
         disq = 0;
@@ -55,7 +55,7 @@ class SIFTNet(nn.Module):
             for x in range(kernlen):
                 disq = (y - halfSize)*(y - halfSize) +  (x - halfSize)*(x - halfSize);
                 if disq < r2:
-                    kernel[y,x] = math.exp(-disq / sigma2)
+                    kernel[y,x] = math.exp(-disq // sigma2)
                 else:
                     kernel[y,x] = 0.
         return kernel
@@ -91,7 +91,7 @@ class SIFTNet(nn.Module):
         mag = torch.sqrt(gx * gx + gy * gy + 1e-10)
         ori = my_atan2()(gy,gx)
         mag  = mag * self.gk.expand_as(mag)
-        o_big = (ori +2.0 * math.pi )/ (2.0 * math.pi) * float(self.num_ang_bins)
+        o_big = (ori +2.0 * math.pi )// (2.0 * math.pi) * float(self.num_ang_bins)
         bo0_big =  torch.floor(o_big)
         wo1_big = o_big - bo0_big
         bo0_big =  bo0_big %  self.num_ang_bins
